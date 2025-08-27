@@ -37,7 +37,7 @@ func Load(cfg interface{}) error {
 
 		err := processField(field, fieldType)
 		if err != nil {
-			return fmt.Errorf(err.Error(), ErrProcessField.Error())
+			return fmt.Errorf("%v: %w", ErrProcessField, err)
 		}
 	}
 
@@ -54,7 +54,7 @@ func processField(field reflect.Value, fieldType reflect.StructField) error {
 		// If no "env" tag, check and process nested struct, or else skip field with error
 		if field.Kind() == reflect.Struct {
 			if err := Load(field.Addr().Interface()); err != nil {
-				return fmt.Errorf(err.Error(), "failed to load nested struct %s", fieldType.Name)
+				return fmt.Errorf("failed to load nested struct %s: %w", fieldType.Name, err)
 			}
 		} else {
 			// In this case, we skip the field since it's not a struct and doesn't have a tag
@@ -78,12 +78,12 @@ func processField(field reflect.Value, fieldType reflect.StructField) error {
 
 		// Set the field value
 		if err := setFieldValue(field, value); err != nil {
-			return fmt.Errorf(err.Error(), "failed to set field %s", fieldType.Name)
+			return fmt.Errorf("failed to set field %s: %w", fieldType.Name, err)
 		}
 
 		// Validation based on field type. Not sure on this one maybe we can flesh it out according to our needs later on
 		if err := validateField(field); err != nil {
-			return fmt.Errorf(err.Error(), "validation failed for field %s", fieldType.Name)
+			return fmt.Errorf("validation failed for field %s: %w", fieldType.Name, err)
 		}
 	}
 
