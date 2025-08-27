@@ -183,3 +183,157 @@ func TestLoadNestedStruct(t *testing.T) {
 	assert.Equal(t, "localhost", cfg.DB.Host)
 	assert.Equal(t, 5432, cfg.DB.Port)
 }
+
+func TestLoadNestedStructAndNormalVar(t *testing.T) {
+	os.Setenv("PORT", "8080")
+	os.Setenv("KAFKA_URL", "kafka1:9092,kafka2:9092")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("POSTGRES_USER", "test_user")
+
+	var cfg struct {
+		Port     int    `env:"PORT"`
+		KafkaURL string `env:"KAFKA_URL"`
+		DB       struct {
+			Host string `env:"DB_HOST"`
+			Port int    `env:"DB_PORT"`
+		}
+		PGUser string `env:"POSTGRES_USER"`
+	}
+
+	if err := Load(&cfg); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	assert.Equal(t, 8080, cfg.Port)
+	assert.Equal(t, "kafka1:9092,kafka2:9092", cfg.KafkaURL)
+	assert.Equal(t, "test_user", cfg.PGUser)
+	assert.Equal(t, "localhost", cfg.DB.Host)
+	assert.Equal(t, 5432, cfg.DB.Port)
+}
+
+func TestIncorrectInput(t *testing.T) {
+	var cfg string
+	err := Load(&cfg)
+	assert.Contains(t, err.Error(), "expected pointer to struct")
+}
+
+func TestLoadNestedStructAndNormalVarType(t *testing.T) {
+	os.Setenv("PORT", "8080")
+	os.Setenv("KAFKA_URL", "kafka1:9092,kafka2:9092")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("POSTGRES_USER", "test_user")
+
+	type cfg struct {
+		Port     int    `env:"PORT"`
+		KafkaURL string `env:"KAFKA_URL"`
+		DB       struct {
+			Host string `env:"DB_HOST"`
+			Port int    `env:"DB_PORT"`
+		}
+		PGUser string `env:"POSTGRES_USER"`
+	}
+
+	var c cfg
+	if err := Load(&c); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	assert.Equal(t, 8080, c.Port)
+	assert.Equal(t, "kafka1:9092,kafka2:9092", c.KafkaURL)
+	assert.Equal(t, "test_user", c.PGUser)
+	assert.Equal(t, "localhost", c.DB.Host)
+	assert.Equal(t, 5432, c.DB.Port)
+}
+
+func TestLoadNestedStructRequiredTag(t *testing.T) {
+	os.Setenv("PORT", "8080")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("POSTGRES_USER", "test_user")
+
+	type cfg struct {
+		Port     int    `env:"PORT"`
+		KafkaURL string `env:"KAFKA_URLBB"`
+		DB       struct {
+			Host string `env:"DB_HOST" required:"true"`
+			Port int    `env:"DB_PORT" required:"true"`
+		}
+		PGUser string `env:"POSTGRES_USER" required:"true"`
+	}
+
+	var c cfg
+	if err := Load(&c); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Check that the values were loaded correctly
+	assert.Equal(t, 8080, c.Port)
+	assert.Equal(t, "", c.KafkaURL)
+	assert.Equal(t, "test_user", c.PGUser)
+	assert.Equal(t, "localhost", c.DB.Host)
+	assert.Equal(t, 5432, c.DB.Port)
+}
+
+func TestLoadNestedStructRequiredTagErr1(t *testing.T) {
+	os.Setenv("PORT", "8080")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("POSTGRES_USER", "test_user")
+
+	type cfg struct {
+		Port     int    `env:"PORT"`
+		KafkaURL string `env:"KAFKA_URL"`
+		DB       struct {
+			Host string `env:"DB_HOST1" required:"true"`
+			Port int    `env:"DB_PORT" required:"true"`
+		}
+		PGUser string `env:"POSTGRES_USER" required:"true"`
+	}
+
+	var c cfg
+	err := Load(&c)
+	assert.Contains(t, err.Error(), "required environment variable DB_HOST1 is empty")
+}
+
+func TestLoadIncorrectTypeHandling(t *testing.T) {
+	os.Setenv("PORT", "not_an_integer")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("POSTGRES_USER", "test_user")
+
+	type cfg struct {
+		Port     int    `env:"PORT" required:"true"`
+		KafkaURL string `env:"KAFKA_URL"`
+		DB       struct {
+			Host string `env:"DB_HOST" required:"true"`
+			Port int    `env:"DB_PORT" required:"true"`
+		}
+		PGUser string `env:"POSTGRES_USER" required:"true"`
+	}
+
+	var c cfg
+	err := Load(&c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "strconv.Atoi: parsing \"not_an_integer\": invalid syntax")
+}
+
+func TestLoadNestedStructDefaultTag(t *testing.T) {
+	os.Setenv("PORT2", "8080")
+	os.Setenv("POSTGRES_USER", "test_user")
+
+	type cfg struct {
+		Port int `env:"PORT2" required:"true"`
+		DB   struct {
+			Host string `env:"DB_HOST2"`
+			Port int    `env:"DB_PORT2"`
+		}
+		PGUser string `env:"POSTGRES_USER" required:"true"`
+	}
+
+	var c cfg
+	err := Load(&c)
+	assert.NoError(t, err)
+	assert.Equal(t, "", c.DB.Host)
+	assert.Equal(t, int(0), c.DB.Port)
+}
