@@ -1,5 +1,12 @@
 # goenv-loader
 
+
+[![Build](https://github.com/azpz30/goenv-loader/actions/workflows/go.yml/badge.svg)](https://github.com/azpz30/goenv-loader/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/azpz30/goenv-loader)](https://goreportcard.com/report/github.com/azpz30/goenv-loader)
+[![codecov](https://codecov.io/gh/azpz30/goenv-loader/branch/main/graph/badge.svg)](https://codecov.io/gh/azpz30/goenv-loader)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/azpz30/goenv-loader)](https://github.com/azpz30/goenv-loader)
+[![License](https://img.shields.io/github/license/azpz30/goenv-loader)](LICENSE)
+
 `goenv-loader` is a lightweight Go package for loading environment variables into your application’s configuration structs.  
 It supports:  
 ✅ Automatic environment variable injection into struct fields  
