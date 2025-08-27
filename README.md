@@ -37,7 +37,7 @@ import (
 	"fmt"
 	"log"
 
-	goenv "github.com/<your-username>/goenv-loader"
+	goenv "github.com/azpz30/goenv-loader"
 )
 
 type Config struct {
